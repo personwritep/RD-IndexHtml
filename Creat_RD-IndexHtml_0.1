@@ -1,0 +1,307 @@
+// ==UserScript==
+// @name        Creat RD-IndexHtml 🔵
+// @namespace        http://tampermonkey.net/
+// @version        0.1
+// @description        Creat "index.html" in Repository
+// @author        GitHub User
+// @match        https://github.com/*
+// @icon        https://www.google.com/s2/favicons?sz=64&domain=github.com
+// @grant        none
+// @updateURL        https://github.com/personwritep/Creat_RD-IndexHtml/raw/main/Creat_RD-IndexHtml.user.js
+// @downloadURL        https://github.com/personwritep/Creat_RD-IndexHtml/raw/main/Creat_RD-IndexHtml.user.js
+// ==/UserScript==
+
+
+let top=Symbol();
+
+
+let target=document.querySelector('head');
+let monitor0=new MutationObserver(check);
+monitor0.observe(target, { childList: true });
+
+function check(){
+    let owner;
+    let repo;
+
+    function isRepoTop(){
+        let paths=window.location.pathname.split('/').filter(Boolean);
+        if(paths.length!==2) return false;
+
+        let reservedWords=new Set([
+            'features', 'search', 'trending', 'explore', 'marketplace',
+            'pricing', 'login', 'signup', 'logout', 'notifications',
+            'settings', 'orgs', 'users', 'collections', 'topics'
+        ]);
+
+        let [owner, repo]=paths;
+        return !reservedWords.has(owner);
+
+    } // isRepoTop
+
+
+    if(isRepoTop()){ // リポジトリトップの場合
+        setTimeout(()=>{
+            if(!window[top]){
+                let paths=window.location.pathname.split('/').filter(Boolean);
+                window[top]=true;
+                owner=paths[0];
+                repo=paths[1];
+                main_1(owner, repo);
+            }
+        }, 600); }
+    else{
+        let params=new URLSearchParams(window.location.search);
+        if(params.has("write_index")){
+            main_2(); }
+        else if(params.has("edit_index")){
+            main_3(); }}
+
+} // check()
+
+
+
+function main_1(owner, repo){
+    let creat_new_file_url="https://github.com/"+ owner +"/"+ repo +"/new/main?write_index";
+    let edit_file_url="https://github.com/"+ owner +"/"+ repo +"/edit/main/index.html?edit_index";
+
+
+    let retry=0;
+    let interval=setInterval(wait_target, 200);
+    function wait_target(){
+        retry++;
+        if(retry>20){ // リトライ制限 10回 2sec
+            clearInterval(interval); }
+        let target=document.querySelector('a.Link--primary, a[data-turbo-frame]'); // 監視 target
+        if(target){
+            clearInterval(interval);
+            files_check(); }}
+
+
+    function files_check(){
+        if(check_index()){
+            location.href=edit_file_url; }
+        else{
+            location.href=creat_new_file_url; }
+
+        function check_index(){
+            let hasIndexHtml=Array.from(document.querySelectorAll('a.Link--primary, a[data-turbo-frame]'))
+            .some(link=>link.textContent.trim()==='index.html');
+
+            if(hasIndexHtml){
+                return true; }}
+
+    } // files_check()
+
+} // main_1()
+
+
+
+function main_2(){
+    let panel=
+        '<div id="update_panel">'+
+        'Send To: <input class="to_url" type="text">'+
+        '<input class="url_set" type="submit" value="Set">'+
+        '<input class="creat_close" type="submit" value="✖">'+
+        '<style>'+
+        '#update_panel { position: relative; z-index: 100; '+
+        'font: normal 16px/22px Meiryo; margin-bottom: 20px; padding: 10px 20px; '+
+        'border: 1px solid #a6d8ff; border-radius: 6px; background: #ddf4ff; } '+
+        '.to_url { width: 540px; padding: 3px 2px 1px 8px; '+
+        'border: 1px solid #666; border-radius: 3px; margin-right: 15px; } '+
+        '.url_set { padding: 2px 6px 0; margin-right: 30px; } '+
+        '.creat_close { padding: 2px 6px 0; } '+
+        '</style></div>';
+
+    let editor_module=document.querySelector('[class^="BlobEditor-module"]');
+    if(editor_module){
+        if(!document.querySelector('#update_panel')){
+            editor_module.insertAdjacentHTML('beforebegin', panel); }}
+
+
+    let set=document.querySelector('.url_set');
+    if(set){
+        let sleep=(ms)=> new Promise(resolve=> setTimeout(resolve, ms));
+
+        set.onclick=async function(){
+            let to_url=document.querySelector('.to_url');
+            if(to_url.value!=''){
+                let targt_url=to_url.value;
+                write_file_name();
+                await sleep(200); // 200ms待機
+                await write_code(targt_url); }}}
+
+
+
+    function write_file_name(){
+        let file_name=document.querySelector('input[aria-label="File name"]');
+        if(file_name){
+            let targetValue='index.html';
+            let valueSetter=Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
+            let prototype=Object.getPrototypeOf(file_name);
+            let reactValueSetter=Object.getOwnPropertyDescriptor(prototype, 'value')?.set;
+
+            let setter=valueSetter || reactValueSetter;
+            if(setter){
+                setter.call(file_name, targetValue);
+                let event=new Event('input', { bubbles: true });
+                file_name.dispatchEvent(event); }}
+
+    } // write_file_name()
+
+
+
+    let creat_close=document.querySelector('.creat_close');
+    if(creat_close){
+        creat_close.onclick=()=>{
+            let panel=document.querySelector('#update_panel');
+            if(panel){
+                panel.remove(); }}}
+
+
+
+    function write_code(targt_url){
+        let cmContent=document.querySelector('.cm-content');
+        if(cmContent){
+            cmContent.focus(); }
+
+        let textToInsert=
+            `<!DOCTYPE html>
+    <html lang="ja">
+    <head>
+    <meta name="robots" content="noindex, follow">
+    <!--  【転送先のURL指定】 -->
+    <meta http-equiv="refresh" content="0; url=${targt_url}">
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>移動中...</title>
+    <script>
+    let meta = document.querySelector('meta[http-equiv="refresh"]');
+    if(meta){
+        let parts=meta.content.split('url=');
+        if (parts.length>1){
+            window.location.replace(parts[1].trim()); }}
+    </script>
+    <style>
+    body { font-family: sans-serif; text-align: center; padding-top: 50px; color: #333; }
+    </style>
+    </head>
+    <body>
+    <p>新しいページへ移動しています...</p>
+    <p>画面が切り替わらない場合は、元のリンクからアクセスし直してください。</p>
+    </body>
+    </html>`;
+
+        document.execCommand('selectAll', false, null);
+        document.execCommand('insertText', false, textToInsert);
+
+    } // write_code()
+
+} // main_2()
+
+
+
+function main_3(){
+    let panel=
+        '<div id="update_panel">'+
+        'Send To: <input class="to_url" type="text">'+
+        '<input class="url_set" type="submit" value="Set">'+
+        '<input class="creat_close" type="submit" value="✖">'+
+        '<style>'+
+        '#update_panel { position: relative; z-index: 100; '+
+        'font: normal 16px/22px Meiryo; margin-bottom: 20px; padding: 10px 20px; '+
+        'border: 1px solid #63b8fb; border-radius: 6px; background: #87cced; } '+
+        '.to_url { width: 540px; padding: 3px 2px 1px 8px; '+
+        'border: 1px solid #666; border-radius: 3px; margin-right: 15px; } '+
+        '.url_set { padding: 2px 6px 0; margin-right: 30px; } '+
+        '.creat_close { padding: 2px 6px 0; } '+
+        '</style></div>';
+
+    let editor_module=document.querySelector('[class^="BlobEditor-module"]');
+    if(editor_module){
+        if(!document.querySelector('#update_panel')){
+            editor_module.insertAdjacentHTML('beforebegin', panel); }}
+
+
+    let set=document.querySelector('.url_set');
+    if(set){
+        let sleep=(ms)=> new Promise(resolve=> setTimeout(resolve, ms));
+        write_file_name();
+
+        set.onclick=async function(){
+            let to_url=document.querySelector('.to_url');
+            if(to_url.value!=''){
+                let targt_url=to_url.value;
+                //        write_file_name();
+                await sleep(200); // 200ms待機
+                await write_code(targt_url); }}}
+
+
+
+    function write_file_name(){
+        let file_name=document.querySelector('input[aria-label="File name"]');
+        if(file_name){
+            let targetValue='index.html';
+            let valueSetter=Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
+            let prototype=Object.getPrototypeOf(file_name);
+            let reactValueSetter=Object.getOwnPropertyDescriptor(prototype, 'value')?.set;
+
+            let setter=valueSetter || reactValueSetter;
+            if(setter){
+                setter.call(file_name, targetValue);
+                let event=new Event('input', { bubbles: true });
+                file_name.dispatchEvent(event); }}
+
+    } // write_file_name()
+
+
+
+    let creat_close=document.querySelector('.creat_close');
+    if(creat_close){
+        creat_close.onclick=()=>{
+            let panel=document.querySelector('#update_panel');
+            if(panel){
+                panel.remove(); }}}
+
+
+
+    function write_code(targt_url){
+        let cmContent=document.querySelector('.cm-content');
+        if(cmContent){
+            cmContent.focus(); }
+
+        let textToInsert=
+            `<!DOCTYPE html>
+    <html lang="ja">
+    <head>
+    <meta name="robots" content="noindex, follow">
+    <!--  【転送先のURL指定】 -->
+    <meta http-equiv="refresh" content="0; url=${targt_url}">
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>移動中...</title>
+    <script>
+    let meta = document.querySelector('meta[http-equiv="refresh"]');
+    if(meta){
+        let parts=meta.content.split('url=');
+        if (parts.length>1){
+            window.location.replace(parts[1].trim()); }}
+    </script>
+    <style>
+    body { font-family: sans-serif; text-align: center; padding-top: 50px; color: #333; }
+    </style>
+    </head>
+    <body>
+    <p>新しいページへ移動しています...</p>
+    <p>画面が切り替わらない場合は、元のリンクからアクセスし直してください。</p>
+    </body>
+    </html>`;
+
+        document.execCommand('selectAll', false, null);
+        document.execCommand('insertText', false, textToInsert);
+
+    } // write_code()
+
+} // main_3()
+
