@@ -1,5 +1,5 @@
 // ==UserScript==
-// @name        Creat RD-IndexHtml 🔵
+// @name        RD-IndexHtml 🔵
 // @namespace        http://tampermonkey.net/
 // @version        0.1
 // @description        Creat "index.html" in Repository
@@ -7,8 +7,8 @@
 // @match        https://github.com/*
 // @icon        https://www.google.com/s2/favicons?sz=64&domain=github.com
 // @grant        none
-// @updateURL        https://github.com/personwritep/Creat_RD-IndexHtml/raw/main/Creat_RD-IndexHtml.user.js
-// @downloadURL        https://github.com/personwritep/Creat_RD-IndexHtml/raw/main/Creat_RD-IndexHtml.user.js
+// @updateURL        https://github.com/personwritep/RD-IndexHtml/raw/main/RD-IndexHtml.user.js
+// @downloadURL        https://github.com/personwritep/RD-IndexHtml/raw/main/RD-IndexHtml.user.js
 // ==/UserScript==
 
 
