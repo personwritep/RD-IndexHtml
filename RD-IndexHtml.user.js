@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        RD-IndexHtml 🔵
 // @namespace        http://tampermonkey.net/
-// @version        0.1
+// @version        0.2
 // @description        Creat "index.html" in Repository
 // @author        GitHub User
 // @match        https://github.com/*
@@ -78,10 +78,35 @@ function main_1(owner, repo){
 
 
     function files_check(){
-        if(check_index()){
-            location.href=edit_file_url; }
-        else{
-            location.href=creat_new_file_url; }
+        let sw=
+            '<div class="es_container">'+
+            '<button class="edit_start">Edit Redirect Index</button>'+
+            '<div class="first_creat">creat new</div>'+
+            '<style>'+
+            '.es_container { display: flex; margin-right: 0; } '+
+            '.edit_start { padding: 0 6px; height: 28px; line-height: 12px; margin-right: 6px; '+
+            'color: #fff; border: 1px solid #3592ff; border-radius: 5px; background: #3592ff; } '+
+            '.first_creat { padding: 0 6px; margin-top: 2px; height: 24px; border-radius: 12px; '+
+            'background: #ffd8d8; display: none; } '+
+            '#repo-title-component { display: flex; justify-content: space-between; } '+
+            '</style></div>';
+
+        let header_m=document.querySelector('#repo-title-component');
+        if(header_m){
+            document.querySelector('.edit_start') ? null : header_m.insertAdjacentHTML('beforeend', sw); }
+
+
+        let start_sw=document.querySelector('.edit_start');
+        let first_creat=document.querySelector('.first_creat');
+        if(start_sw && first_creat){
+            if(!check_index()){
+                first_creat.style.display='block'; }
+
+            start_sw.onclick=()=>{
+                if(check_index()){
+                    location.href=edit_file_url; }
+                else{
+                    location.href=creat_new_file_url; }}}
 
         function check_index(){
             let hasIndexHtml=Array.from(document.querySelectorAll('a.Link--primary, a[data-turbo-frame]'))
@@ -121,6 +146,7 @@ function main_2(){
     let set=document.querySelector('.url_set');
     if(set){
         let sleep=(ms)=> new Promise(resolve=> setTimeout(resolve, ms));
+        write_file_name();
 
         set.onclick=async function(){
             let to_url=document.querySelector('.to_url');
