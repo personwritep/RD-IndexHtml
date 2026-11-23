@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        RD-IndexHtml 🔵
 // @namespace        http://tampermonkey.net/
-// @version        0.2
+// @version        0.3
 // @description        Creat "index.html" in Repository
 // @author        GitHub User
 // @match        https://github.com/*
@@ -16,30 +16,16 @@ let top=Symbol();
 
 
 let target=document.querySelector('head');
-let monitor0=new MutationObserver(check);
+let monitor0=new MutationObserver(main);
 monitor0.observe(target, { childList: true });
 
-function check(){
+main();
+
+function main(){
     let owner;
     let repo;
 
-    function isRepoTop(){
-        let paths=window.location.pathname.split('/').filter(Boolean);
-        if(paths.length!==2) return false;
-
-        let reservedWords=new Set([
-            'features', 'search', 'trending', 'explore', 'marketplace',
-            'pricing', 'login', 'signup', 'logout', 'notifications',
-            'settings', 'orgs', 'users', 'collections', 'topics'
-        ]);
-
-        let [owner, repo]=paths;
-        return !reservedWords.has(owner);
-
-    } // isRepoTop
-
-
-    if(isRepoTop()){ // リポジトリトップの場合
+    if(isRepoRoot()){ // リポジトリトップの場合
         setTimeout(()=>{
             if(!window[top]){
                 let paths=window.location.pathname.split('/').filter(Boolean);
@@ -49,14 +35,27 @@ function check(){
                 main_1(owner, repo);
             }
         }, 600); }
-    else{
+    else if(isEditor() || isnewEditor()){
         let params=new URLSearchParams(window.location.search);
         if(params.has("write_index")){
             main_2(); }
         else if(params.has("edit_index")){
             main_3(); }}
 
-} // check()
+
+    function isRepoRoot(){ // リポジトリのルート画面
+        let pathParts=window.location.pathname.split('/').filter(Boolean);
+        return pathParts.length===2 || (pathParts.length>=4 && pathParts[2]==='tree'); }
+
+    function isEditor(){ // 既存ファイル編集画面
+        let pathParts=window.location.pathname.split('/').filter(Boolean);
+        return pathParts.length>= 4 && pathParts[2]==='edit'; }
+
+    function isnewEditor(){ // 新規ファイル編集画面
+        let pathParts=window.location.pathname.split('/').filter(Boolean);
+        return pathParts.length>=3 && pathParts[2]==='new'; }
+
+} // main();
 
 
 
